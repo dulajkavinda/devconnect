@@ -4,6 +4,8 @@ const passport = require("passport");
 const mongoose = require("mongoose");
 const keys = require("../../config/keys");
 
+mongoose.set("useFindAndModify", false);
+
 // Load user model
 const Profile = require("../../models/Profile");
 
@@ -29,6 +31,7 @@ router.get(
     const errors = {};
 
     Profile.findOne({ user: req.user.id })
+      .populate("user", ["name", "avatar"])
       .then(profile => {
         if (!profile) {
           errors.noprofile = "There is no profile";
@@ -40,10 +43,66 @@ router.get(
   }
 );
 
+// @route GET api/profile/handle/:handle
+// @desc Get profile by handle
+// @access Public
+router.get("/handle/:handle", (req, res) => {
+  const errors = {};
+
+  Profile.findOne({ handle: req.params.handle }) //use param[s]
+    .populate("user", ["name", "avatar"])
+    .then(profile => {
+      if (!profile) {
+        errors.noprofile = "There is no profile";
+        res.status(404).json(errors);
+      } else {
+        res.json(profile);
+      }
+    })
+    .catch(err => res.status(404).json(err));
+});
+
+// @route GET api/profile/user/:user_id
+// @desc Get profile by user id
+// @access Public
+router.get("/user/:user_id", (req, res) => {
+  const errors = {};
+  Profile.findOne({ user: req.params.user_id })
+    .populate("user", ["name", "avatar"])
+    .then(profile => {
+      if (!profile) {
+        errors.noprofile = "There is no profile";
+        res.status(404).json(errors);
+      } else {
+        res.json(profile);
+      }
+    })
+    .catch(err =>
+      res.status(404).json({ profile: "There is no profile for the user" })
+    );
+});
+
+// @route GET api/profile/user/all
+// @desc Get all profiles
+// @access Public
+router.get("/all", (req, res) => {
+  const errors = {};
+  Profile.find()
+    .populate("user", ["name", "avatar"])
+    .then(profiles => {
+      if (!profiles) {
+        errors.noprofile = "There are no profiles";
+        res.status(404).json(errors);
+      } else {
+        res.json(profiles);
+      }
+    })
+    .catch(() => res.status(404).json({ profile: "There are no profiles" }));
+});
+
 // @route POST api/profile
 // @desc create user profile
 // @access Private
-
 router.post(
   "/",
   passport.authenticate("jwt", { session: false }),
@@ -91,12 +150,16 @@ router.post(
         //create
 
         //check if handle exist
-        Profile.findOne({ handle: profileFields.handle }).then(profile => {
-          if (profile) {
-            errors.handle = "That handle already exist";
-            res.json(400).json(errors);
-          }
-        });
+        Profile.findOne({ handle: profileFields.handle }).then(
+          profile => {
+            if (profile) {
+              errors.handle = "That handle already exist";
+              res.json(400).json(errors);
+            }
+          },
+          { $set: updateData },
+          { useFindAndModify: false }
+        );
 
         //save profile
         new Profile(profileFields).save().then(profile => res.json(profile));

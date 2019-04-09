@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-// Create Schema
 
+// Create Schema
 const ProfileSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
@@ -101,13 +101,13 @@ const ProfileSchema = new Schema({
     twitter: {
       type: String
     },
+    facebook: {
+      type: String
+    },
     linkedin: {
       type: String
     },
     instagram: {
-      type: String
-    },
-    facebook: {
       type: String
     }
   },
